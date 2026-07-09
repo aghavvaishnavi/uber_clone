@@ -11,6 +11,7 @@ const UserSignup = () => {
   const [ firstName, setFirstName ] = useState('')
   const [ lastName, setLastName ] = useState('')
   const [ userData, setUserData ] = useState({})
+  const [ error, setError ] = useState('')
 
   const navigate = useNavigate()
 
@@ -23,6 +24,9 @@ const UserSignup = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault()
+    setError('')
+    console.log('Submitting to:', import.meta.env.VITE_BASE_URL)
+
     const newUser = {
       fullname: {
         firstname: firstName,
@@ -32,21 +36,24 @@ const UserSignup = () => {
       password: password
     }
 
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/register`, newUser)
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/register`, newUser)
 
-    if (response.status === 201) {
-      const data = response.data
-      setUser(data.user)
-      localStorage.setItem('token', data.token)
-      navigate('/home')
+      if (response.status === 201) {
+        const data = response.data
+        setUser(data.user)
+        localStorage.setItem('token', data.token)
+        navigate('/home')
+      }
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError(err?.response?.data?.message || err.message || 'Something went wrong. Is the backend running?')
     }
-
 
     setEmail('')
     setFirstName('')
     setLastName('')
     setPassword('')
-
   }
   return (
     <div>
@@ -106,6 +113,11 @@ const UserSignup = () => {
               placeholder='password'
             />
 
+            {error && (
+              <div className='bg-red-100 text-red-700 text-sm rounded-lg px-4 py-2 mb-3'>
+                ⚠️ {error}
+              </div>
+            )}
             <button
               className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
             >Create account</button>

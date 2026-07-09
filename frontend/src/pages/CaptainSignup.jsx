@@ -17,6 +17,8 @@ const CaptainSignup = () => {
   const [ vehiclePlate, setVehiclePlate ] = useState('')
   const [ vehicleCapacity, setVehicleCapacity ] = useState('')
   const [ vehicleType, setVehicleType ] = useState('')
+  const [ error, setError ] = useState('')
+  const [ loading, setLoading ] = useState(false)
 
 
   const { captain, setCaptain } = React.useContext(CaptainDataContext)
@@ -24,6 +26,9 @@ const CaptainSignup = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault()
+    setError('')
+    setLoading(true)
+
     const captainData = {
       fullname: {
         firstname: firstName,
@@ -39,24 +44,36 @@ const CaptainSignup = () => {
       }
     }
 
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
 
-    if (response.status === 201) {
-      const data = response.data
-      setCaptain(data.captain)
-      localStorage.setItem('token', data.token)
-      navigate('/captain-home')
+      if (response.status === 201) {
+        const data = response.data
+        setCaptain(data.captain)
+        localStorage.setItem('token', data.token)
+        // Only clear form on success
+        setEmail('')
+        setFirstName('')
+        setLastName('')
+        setPassword('')
+        setVehicleColor('')
+        setVehiclePlate('')
+        setVehicleCapacity('')
+        setVehicleType('')
+        navigate('/captain-home')
+      }
+    } catch (err) {
+      console.error('Captain signup error:', err)
+      const errData = err?.response?.data
+      // Backend returns either { errors: [{msg}] } or { message: '...' }
+      const msg = errData?.errors?.map(e => e.msg).join(', ')
+        || errData?.message
+        || err.message
+        || 'Something went wrong.'
+      setError(msg)
+    } finally {
+      setLoading(false)
     }
-
-    setEmail('')
-    setFirstName('')
-    setLastName('')
-    setPassword('')
-    setVehicleColor('')
-    setVehiclePlate('')
-    setVehicleCapacity('')
-    setVehicleType('')
-
   }
   return (
     <div className='py-5 px-5 h-screen flex flex-col justify-between'>
@@ -160,13 +177,19 @@ const CaptainSignup = () => {
               <option value="" disabled>Select Vehicle Type</option>
               <option value="car">Car</option>
               <option value="auto">Auto</option>
-              <option value="moto">Moto</option>
+              <option value="motorcycle">Moto</option>
             </select>
           </div>
 
+          {error && (
+            <div className='bg-red-100 text-red-700 text-sm rounded-lg px-4 py-2 mb-3'>
+              ⚠️ {error}
+            </div>
+          )}
           <button
-            className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
-          >Create Captain Account</button>
+            disabled={loading}
+            className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg disabled:opacity-60'
+          >{loading ? 'Creating account...' : 'Create Captain Account'}</button>
 
         </form>
         <p className='text-center'>Already have a account? <Link to='/captain-login' className='text-blue-600'>Login here</Link></p>
